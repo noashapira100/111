@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <meta charset='utf-8' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js'></script>
+<link rel="stylesheet" href="index.css">
+
+
+</head>
+
+<body>
+
+  <div id='calendar'></div>
+  <h1>API Request</h1>
+  <button class="bt" onclick="POSTaddEvent()"> Add Event </button>
+  <button class="bt" onclick="PUTupdateEvent()"> Update Event </button>
+  <button class="bt" onclick="deleteEvent()"> Delete Event </button><br>
+  <input id="title" class="bt" name="title" placeholder="Enter the title">
+  <input type="date" id="date" class="bt" name="date" placeholder="Enter the date yyyy-mm-dd">
+  <label for="select">Select an event to delete or update</label>
+  <select name="getEvents" id="options" class="bt">
+    <option value="">Select an event</option>
+  </select>
+  <div id="resultText"></div>
+
+  
+
+  <script>
+    //POST
+    function POSTaddEvent() {
+      axios.post("https://localhost:7112/api/Events", {
+        title: document.querySelector("#title").value,
+        start: document.querySelector("#date").value,
+      })
+        .then((res) => {
+          document.getElementById('resultText').innerHTML =
+            JSON.stringify(res.data);
+          location.reload();
+        });
+    }
+    //PUT
+    function PUTupdateEvent() {
+      let id = document.getElementById('options').value;
+      if(!id){
+      alert("Please select an event to update.")
+      return;
+    }
+      axios.put(`https://localhost:7112/api/Events/${id}`, {
+        title: document.querySelector("#title").value,
+        start: document.querySelector("#date").value,
+      })
+        .then((res) => {
+          document.getElementById('resultText').innerHTML = "The event updated";
+          location.reload();
+
+        });
+    }
+    //DELETE
+    function deleteEvent() {
+      let id = document.getElementById('options').value;
+      if (!id) {
+        alert("Please select an event to delete.")
+        return;
+      }
+      axios.delete(`https://localhost:7112/api/Events/${id}`)
+        .then((res) => {
+          document.getElementById('resultText').innerHTML = "The event was deleted";
+          location.reload();
+        })
+        .catch(er => console.error('Error deleting the event:', error))
+    }
+    //GET שימת הארועים על הלוח
+    //יצירת הרשימה לבחירת ארועים
+    document.addEventListener("DOMContentLoaded", function () {
+      axios.get("https://localhost:7112/api/Events").then((res) => {
+        var calendarEl = document.getElementById("calendar");
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          events: res.data,
+        });
+        calendar.render();
+        for (let i = 0; i < res.data.length; i++) {
+          let newE = document.createElement('option');
+          newE.classList.add("listOption")
+          newE.textContent = res.data[i].title;
+          newE.value = res.data[i].id;
+          document.querySelector("#options").append(newE);
+        }
+      });
+    });
+    // בחירת ארוע מהרשימה ועדכון ב input
+    document.querySelector("#options").addEventListener("change", function () {
+      let eventSelected = document.querySelector("#options");
+      axios.get("https://localhost:7112/api/Events").then((res) => {
+        if (eventSelected.selectedIndex - 1 >= 0) {
+          const choose = res.data[eventSelected.selectedIndex - 1]
+          document.querySelector("#title").value = choose.title;
+          document.querySelector("#date").value = choose.start;
+        }
+
+      })
+        .catch(er => console.error('שגיאה במילוי האירוע:', er))
+    })
+  </script>
+
+</body>
+
+</html>
